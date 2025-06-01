@@ -75,7 +75,64 @@ let%test _ = does_raise (fun () -> encoder_lettre t9_map 'A')
 
 (* QUESTION 2*)
 
-let encoder_mot encodage mot = ()
+(******************************************************************************)
+(*                                                                            *)
+(*      Fonction d'encodage d'un caractère                                    *)
+(*                                                                            *)
+(*   signature : encoder_caractere : encodage -> char -> int list            *)
+(*                                                                            *)
+(*   paramètres :                                                             *)
+(*     - un encodage : une liste de couples (touche, liste de lettres)       *)
+(*     - un caractère à encoder                                               *)
+(*                                                                            *)
+(*   résultat :                                                               *)
+(*     - une liste d’entiers représentant les touche                         *)
+(*       nécessaires pour produire ce caractère, suivie d’un 0               *)
+(*       (pour marquer la séparation entre les lettres)                      *)
+(*                                                                            *)
+(******************************************************************************)
+
+let encoder_caractere encodage c =
+  let (touche, nombre) = encoder_lettre encodage c in
+  List.init nombre (fun _ -> touche) @ [0]
+
+(*TESTS*)  
+let%test _ = encoder_caractere t9_map 'a' = [2; 0]
+let%test _ = encoder_caractere t9_map 'c' = [2; 2; 2; 0]
+let%test _ = encoder_caractere t9_map 'f' = [3; 3; 3; 0]
+let%test _ = encoder_caractere t9_map 'z' = [9; 9; 9; 9; 0]
+
+(******************************************************************************)
+(*                                                                            *)
+(*      Fonction d'encodage d'un mot                                          *)
+(*                                                                            *)
+(*   signature : encoder_mot : encodage -> string -> int list                *)
+(*                                                                            *)
+(*   paramètres :                                                             *)
+(*     - encodage : une liste d’associations (touche, lettres associées)     *)
+(*     - mot : une chaîne de caractères à encoder (string)                   *)
+(*                                                                            *)
+(*   résultat :                                                               *)
+(*     - une liste d'entiers représentant les touches à presser sur un       *)
+(*       pour saisir le mot. Chaque lettre est convertie en                  *)
+(*       une séquence de chiffres (répétée selon sa position), suivie de 0   *)
+(*       pour marquer la séparation entre les lettres.                       *)
+(*                                                                            *)
+(******************************************************************************)
+
+let rec encoder_mot encodage mot =
+  match mot with
+  | "" -> []  
+  | _ ->
+    let c = mot.[0] in  
+    let reste = String.sub mot 1 (String.length mot - 1) in
+    encoder_caractere encodage c @ encoder_mot encodage reste
+
+(*TESTS*)
+let%test _ = encoder_mot t9_map "bonjour" = [2;2;0;6;6;6;0;6;6;0;5;0;6;6;6;0;8;8;0;7;7;7;0]
+let%test _ = encoder_mot t9_map "cafe" = [2;2;2;0;2;0;3;3;3;0;3;3;0]
+let%test _ = encoder_mot stupide_map "chat" = [3;3;0;3;3;3;3;3;3;0;2;0;3;3;3;3;3;3;3;3;3;3;3;3;3;3;3;3;0]
+
 
 
 (******************************************************************************)
