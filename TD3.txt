@@ -1,0 +1,37 @@
+Exo 1 :
+type 'a arbre = Noued of bool*('a branche list) and 'a branche = 'a*'a arbre
+
+Exo 2 :
+(*fonction auxiliaire*)	
+let rec recherche c lb = # lb est une liste de couple
+	match lb with
+	|[] -> None
+	|(tc,ta)::q -> if (c < tc) then None 
+	else if c=tc then Some ta 
+	else recherche c q
+
+(*'a list -> 'a arbre -> bool*)
+let rec appartient lc Noued(etat,lb) =  # lc : liste de caracteres / lb: liste de branches
+	match lc with
+	|[] -> etat 
+	|c::qlc -> match recherche c lb with 
+		   |None -> false
+		   |Some n -> appartient qlc n
+
+Exo 3 :
+let rec maj c nouv_branche lb =
+	match lb with 
+	|[] -> [c,nouvelle_branche]
+	|(tc,ta)::q -> if c < tc then (c,nouvelle_branche)::lb
+	else if c = tc then (c,nouvelle_branche)::q
+	else (tc,ta)::(maj c nouvella_branche q)
+	
+let rec ajout lc Noeud(b,lb)=
+	match lc with 
+	|[] -> Noued(true,lb)
+	|c::qlc -> let arbre_r = match recherche c lb with 
+					|None -> Noeud(false,[])
+					|Some n -> n
+		in Noeud(b,maj c (ajout qlc arbre_r) lb)
+
+		   
