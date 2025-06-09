@@ -146,40 +146,90 @@ let%test _ = ajouter t9_map t3 "az" = t3_sym  (*Ce test spécifique ne fonctionn
 let%test _ = does_raise (fun () -> ajouter t9_map t3 "café")
 
 
-(* QUESTION 4*)
-
-let read_line ic =
-  let rec loop l =
-    try 
-      let line = input_line ic in 
-      loop (line::l)
-    with End_of_file -> List.rev l
-  in loop []
-
-let read filename =
-  let file = open_in filename in
-  let lines = read_line file in
-  close_in file ;
-  lines 
+(*QUESTION 3*)
+(******************************************************************************)
+(*                                                                            *)
+(*      Fonction pour construire un dictionnaire                              *)
+(*                                                                            *)
+(*   signature : creer_dico : encodage −> string −> dico                      *)
+(*                                                                            *)
+(*   paramètres : 
+      - un encodage (liste de couples (touche, liste de lettres))             *)
+(*    -  un mot à partir d'un fichier                                         *)
+(*   résultat     : un dictionnaire contenant le mot passé en parametre       *)
+(*                                                                            *)
+(******************************************************************************)
 
 let creer_dico encodage fichier =
-  let mots = read fichier in
-  List.fold_left (ajouter encodage) empty mots
-
-(*autre alternative, proposée par GPT
-let creer_dico encodage chemin =
-  let ic = open_in chemin in
+  let ic = open_in fichier in
   let rec loop dico =
     try
       let mot = input_line ic in
-      loop (ajout encodage dico mot)
+      loop (ajouter encodage dico mot)
     with End_of_file -> 
       close_in ic; 
       dico
   in
-  loop empty *)
+  loop empty
 
-(* QUESTION 5*)
+let dico_for_test = creer_dico t9_map "petit_dico_test.txt"
+
+let%test _ =
+  dico_for_test =
+    Noeud
+ ([],
+  [(4,
+    Noeud
+     ([],
+      [(7,
+        Noeud
+         ([],
+          [(4,
+            Noeud ([], [(7, Noeud (["gris"], []))]));
+           (6,
+            Noeud ([], [(7, Noeud (["gros"], []))]))]))]));
+   (2,
+    Noeud
+     ([],
+      [(4,
+        Noeud
+         ([],
+          [(4,
+            Noeud
+             ([],
+              [(3,
+                Noeud
+                 ([], [(6, Noeud (["chien"], []))]))]));
+           (2,
+            Noeud
+             ([],
+              [(8,
+                Noeud
+                 (["chat"],
+                  [(8,
+                    Noeud
+                     ([],
+                      [(6,
+                        Noeud
+                         ([], [(6, Noeud (["chatton"], []))]))]))]))]))]));
+       (2,
+        Noeud
+         ([],
+          [(5,
+            Noeud
+             ([],
+              [(5,
+                Noeud
+                 ([],
+                  [(3, Noeud (["balle"], []));
+                   (6,
+                    Noeud
+                     ([], [(6, Noeud (["ballon"], []))]))]))]))]))]))])
+
+
+
+
+(* QUESTION 4*)
 (******************************************************************************)
 (*            Fonction de suppression d'un mot dans un dictionnaire           *)
 (*                                                                            *)
@@ -216,6 +266,43 @@ let supprimer code dico mot =
   let%test _ = supprimer t9_map t6 "so" = t5            (*Supprimer un mot possédant des dicos fils*)
   let%test _ = supprimer t9_map t5 "sos" = t4           (*Vérifier qu'on élague bien*)
   let%test _ = supprimer t9_map t5 "bonjour" = t5       (*Supprimer un élement non présent dans le dico*)
+
+  (*QUESTION 5*)
+
+  let rec recherche_touche touche ld =
+    match ld with
+    | [] -> None
+    | (n,d)::q -> if (touche = n) then (Some d) else recherche_touche touche q
+    
+  (******************************************************************************)
+  (*                                                                            *)
+  (*      Fonction qui vérifie l'appartenance d'un mot dans un dico             *)
+  (*                                                                            *)
+  (*   appartient : encodage −> dico −> string −> bool                          *)
+  (*                                                                            *)
+  (*   paramètres :                                                             *)
+  (*     - un encodage (liste de couples (touche, liste de lettres))            *)
+  (*    -  un dictionnaire                                                      *)
+  (*    -  un mot à vérifier                                                    *)
+  (*   résultat     : un booléen pour dire si le mot appartient au dictionnaire *)
+  (*                                                                            *)
+  (******************************************************************************)
+  let appartient encodage dico mot =
+    let rec chercher_dans_dico (Noeud (mots, ld)) mot_encode =
+      match mot_encode with
+      | [] -> List.mem mot mots 
+      | t :: q ->
+          match recherche_touche t ld with
+          | None -> false 
+          | Some sous_dico -> chercher_dans_dico sous_dico q
+    in
+    let mot_encode = encoder_mot encodage mot in
+    chercher_dans_dico dico mot_encode
+  
+  let%test _ = appartient t9_map dico_for_test "ae" = false
+  let%test _ = appartient t9_map dico_for_test "chat" = true
+  let%test _ = appartient t9_map dico_for_test "chien" = true
+  
 
 
 (*QUESTION 6*)
@@ -264,11 +351,12 @@ let%test _ = does_raise (fun () -> coherent t9_map t7) (*Dico qui n'est pas cens
 (*                                EXERCICE 5                                  *)
 (*                                                                            *)
 (******************************************************************************)
-
+(*QUESTION 1*)
 let rec decoder_mot (Noeud(lm, lc)) listTouches = match listTouches with 
 |[] -> lm
 |t::q -> List.fold_left (fun acc (n, d) -> if n = t then (decoder_mot d q)@acc else acc) [] lc
 
+(*QUESTION 2*)
 let rec prefixe (Noeud(lm, lc)) listTouches = match listTouches with
 |[] -> if lc = [] then lm else List.fold_left (fun acc (_,d) -> (prefixe d [])@acc) lm lc 
 |t::q -> List.fold_left (fun acc (n, d) -> if n = t then (prefixe d q)@acc else acc) [] lc
