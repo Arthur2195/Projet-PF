@@ -32,8 +32,8 @@ let does_raise f =
 exception LettreNonTrouvee of char
 
 let rec encoder_lettre listeCode lettre = match listeCode with
-|[] -> raise (LettreNonTrouvee lettre)
-|(n, l)::q -> if (List.mem lettre l) then n else encoder_lettre q lettre
+  |[] -> raise (LettreNonTrouvee lettre)
+  |(n, l)::q -> if (List.mem lettre l) then n else encoder_lettre q lettre
 
 (* TESTS *)
 let%test _ = encoder_lettre t9_map 'a' = 2
@@ -90,7 +90,7 @@ let empty = Noeud(([], []))
 (******************************************************************************)
 (*                   Fonction d'ajout d'un mot dans un dictionnaire           *)
 (*                                                                            *)
-(*   signature : encodage −> dico −> string −> dico                           *)
+(*   signature : ajouter : encodage −> dico −> string −> dico                 *)
 (*   paramètres :                                                             *)
 (*      - un encodage : une liste d’associations (touche, lettres associées)  *)
 (*      - un dictionnaire : arbre n-aire comportant des listes de mots dans   *)
@@ -116,36 +116,37 @@ let rec maj code c nouv_branche ldTmp ld =
   |(n,d)::q -> if ((encoder_lettre code c) = n) then ((encoder_lettre code c),nouv_branche)::q
               else (maj code c nouv_branche q ld)
 
-let ajout code dico mot = 
+let ajouter code dico mot = 
   let l_mot = string_to_char_list mot in
-  let rec aux dicoTmp motTmp = 
-    match motTmp, dicoTmp with 
-    |[], _ -> dicoTmp
-    |c::qlc, Noeud((lm,ld)) -> let s = char_list_to_string l_mot in 
-                              let arbre_r = match recherche code c ld with 
-                              |None -> if qlc = [] then Noeud(([char_list_to_string l_mot], []))
-                                        else aux empty qlc
-                              |Some Noeud((lm2,ld2)) -> 
-                                                        let lmCleaned = if (qlc = []) && not (List.mem s lm2) then s :: lm2 else lm2 in
-                                                        let sous_arbre = aux (Noeud((lmCleaned, ld2))) qlc in
-                                                        sous_arbre
+  let rec aux (Noeud((lm,ld))) motTmp = match motTmp with 
+    |[] -> Noeud((lm,ld))
+    |c::qlc -> let arbre_r = match recherche code c ld with 
+                |None -> if qlc = [] then Noeud(([char_list_to_string l_mot], []))
+                            else aux empty qlc
+                |Some Noeud((lm2,ld2)) -> let lmCleaned = if (qlc = []) && not (List.mem mot lm2) 
+                                                            then mot :: lm2 else lm2 in
+                                          let sous_arbre = aux (Noeud((lmCleaned, ld2))) qlc in
+                                          sous_arbre
 
-                              in Noeud((lm, maj code c (aux arbre_r qlc) ld ld))
+                in Noeud((lm, maj code c (aux arbre_r qlc) ld ld))
+
   in aux dico l_mot
 
 let t1 = Noeud ([], [(2, Noeud (["a"], []))])
 let t2 = Noeud ([], [(2, Noeud (["a"], [(9, Noeud (["az"], []))]))])
 let t3 = Noeud([], [(2, Noeud (["a"], [(3, Noeud (["af"], [])); (9, Noeud (["az"], []))]))])
+let t4 = Noeud([], [(2, Noeud (["a"], [(3, Noeud (["ae"; "af"], [])); (9, Noeud (["az"], []))]))])
 let t3_sym = Noeud([], [(2, Noeud (["a"], [(9, Noeud (["az"], [])); (3, Noeud (["af"], []))]))])
 
-let%test _ = ajout t9_map empty "a" = t1
-let%test _ = ajout t9_map t1 "az" = t2
-let%test _ = ajout t9_map t2 "af" = t3
-let%test _ = ajout t9_map t3 "az" = t3_sym
-let%test _ = does_raise (fun () -> ajout t9_map t3 "café")
+let%test _ = ajouter t9_map empty "a" = t1
+let%test _ = ajouter t9_map t1 "az" = t2
+let%test _ = ajouter t9_map t2 "af" = t3
+let%test _ = ajouter t9_map t3 "ae" = t4
+let%test _ = ajouter t9_map t3 "az" = t3_sym  (*Ce test spécifique ne fonctionne pas encore*)
+let%test _ = does_raise (fun () -> ajouter t9_map t3 "café")
 
 
-
+(* QUESTION 4*)
 
 let read_line ic =
   let rec loop l =
@@ -153,17 +154,19 @@ let read_line ic =
       let line = input_line ic in 
       loop (line::l)
     with End_of_file -> List.rev l
-  in loop [] 
+  in loop []
+
 let read filename =
   let file = open_in filename in
   let lines = read_line file in
   close_in file ;
   lines 
+
 let creer_dico encodage fichier =
   let mots = read fichier in
-  List.fold_left (ajout encodage) empty mots
+  List.fold_left (ajouter encodage) empty mots
 
-(*autre alternative, proposée par GPT*)
+(*autre alternative, proposée par GPT
 let creer_dico encodage chemin =
   let ic = open_in chemin in
   let rec loop dico =
@@ -174,4 +177,98 @@ let creer_dico encodage chemin =
       close_in ic; 
       dico
   in
-  loop empty
+  loop empty *)
+
+(* QUESTION 5*)
+(******************************************************************************)
+(*            Fonction de suppression d'un mot dans un dictionnaire           *)
+(*                                                                            *)
+(*   signature : encodage −> dico −> string −> dico                           *)
+(*   paramètres :                                                             *)
+(*      - un encodage : une liste d’associations (touche, lettres associées)  *)
+(*      - un dictionnaire : arbre n-aire comportant des listes de mots dans   *)
+(*        les nœuds et des chiffres (touches) sur les branches                *)
+(*      - un mot : une chaîne de caractères (string)                          *)                                                                  
+(*                                                                            *)
+(*   résultat :                                                               *)
+(*      - un dictionnaire sans le mot                                         *)
+(*                                                                            *)
+(******************************************************************************)
+
+let supprimer code dico mot = 
+  let rec aux dicoTmp acc = match dicoTmp with
+    |Noeud((lm, lc)) -> (* Ajouter le mot du noeud s'il est différent de celui à supprimer *)
+                        let acc2 = List.fold_left (fun a e -> if e = mot then a else ajouter code a e) acc (List.rev lm)
+                        (* Appel récursif sur tous les dicos fils *)
+                        in List.fold_left (fun a (_, sousDico) -> aux sousDico a) acc2 (List.rev lc) 
+  in aux dico empty
+
+
+  (* TESTS *)
+  let t3Bis = Noeud([], [(2, Noeud (["a"], [(3, Noeud (["ae"; "ad"], [])); (9, Noeud (["az"], []))]))])
+  let t4Bis = Noeud([], [(2, Noeud (["a"], [(3, Noeud (["ae"; "af"; "ad"], [])); (9, Noeud (["az"], []))]))])
+
+  let t5 = (ajouter t9_map t4 "sos" )
+  let t6 = ajouter t9_map t5 "so"
+  let%test _ = supprimer t9_map t1 "a" = empty          (*Supprimer l'unique élément d'un dictionnaire*)
+  let%test _ = supprimer t9_map t2 "az" =  t1           (*Supprimer un mot à une profondeur 2 de l'arbre*)
+  let%test _ = supprimer t9_map t4Bis "af" = t3Bis      (*Supprimer un mot présent dans le même noeud qu'un autre mot*)
+  let%test _ = supprimer t9_map t6 "so" = t5            (*Supprimer un mot possédant des dicos fils*)
+  let%test _ = supprimer t9_map t5 "sos" = t4           (*Vérifier qu'on élague bien*)
+  let%test _ = supprimer t9_map t5 "bonjour" = t5       (*Supprimer un élement non présent dans le dico*)
+
+
+(*QUESTION 6*)
+
+(******************************************************************************)
+(*            Fonction de vérification de cohérence de dictionnaire           *)
+(*                                                                            *)
+(*   signature : coherent : encodage −> dico −> bool                          *)
+(*   paramètres :                                                             *)
+(*      - un encodage : une liste d’associations (touche, lettres associées)  *)
+(*      - un dictionnaire : arbre n-aire comportant des listes de mots dans   *)
+(*        les nœuds et des chiffres (touches) sur les branches                *)                                                             
+(*                                                                            *)
+(*   résultat :                                                               *)
+(*      - un booléen indiquant si le dictionnaire est cohérent (tous les mots *)
+(*         dans un nœud sont cohérents avec le chemin qui y mène) ou non      *)
+(*                                                                            *)
+(******************************************************************************)
+
+let coherent code dico = 
+  let rec aux codeActuel dicoTmp = match dicoTmp with 
+  |Noeud((lm, lc)) -> (List.fold_left(fun acc e -> acc && (codeActuel = encoder_mot code e)) true lm) 
+                      && (List.fold_left (fun acc (n, d) -> acc && (aux (codeActuel@[n]) d))) true lc
+  in aux [] dico
+
+(* TESTS *)
+let t1Err = Noeud (["b"], [])
+let t4Err = Noeud([], [(2, Noeud (["a"], [(3, Noeud (["ae"; "af"; "ar"], [])); (9, Noeud (["az"], []))]))])
+let t7 = Noeud ([], [(2, Noeud (["é"], []))])
+
+
+let%test _ = coherent t9_map empty = true   (*Cas de base true*)
+let%test _ = coherent t9_map t1Err = false  (*Cas de base false*)
+let%test _ = coherent t9_map t1 = true      (*Dico de profondeur 1*)
+let%test _ = coherent t9_map t2 = true      (*Dico de profondeur 2*)
+let%test _ = coherent t9_map t4Bis = true
+let%test _ = coherent t9_map t4Err = false
+
+let%test _ = coherent stupide_map empty = true (*Idem avec une autre map*)
+let%test _ = coherent stupide_map t2 = false
+let%test _ = coherent stupide_map t6 = false
+let%test _ = does_raise (fun () -> coherent t9_map t7) (*Dico qui n'est pas censé exister avec cet encodage*)
+
+
+(******************************************************************************)
+(*                                EXERCICE 5                                  *)
+(*                                                                            *)
+(******************************************************************************)
+
+let rec decoder_mot (Noeud(lm, lc)) listTouches = match listTouches with 
+|[] -> lm
+|t::q -> List.fold_left (fun acc (n, d) -> if n = t then (decoder_mot d q)@acc else acc) [] lc
+
+let rec prefixe (Noeud(lm, lc)) listTouches = match listTouches with
+|[] -> if lc = [] then lm else List.fold_left (fun acc (_,d) -> (prefixe d [])@acc) lm lc 
+|t::q -> List.fold_left (fun acc (n, d) -> if n = t then (prefixe d q)@acc else acc) [] lc
