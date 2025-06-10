@@ -379,3 +379,8 @@ let%test _ = decoder_mot dico_for_test [8; 3; 6; 3; 7; 3] = ["tendre";"vendre"]
 let rec prefixe (Noeud(lm, lc)) listTouches = match listTouches with
 |[] -> if lc = [] then lm else List.fold_left (fun acc (_,d) -> (prefixe d [])@acc) lm lc 
 |t::q -> List.fold_left (fun acc (n, d) -> if n = t then (prefixe d q)@acc else acc) [] lc
+
+(*TESTS*)
+let%test _ = prefixe dico_for_test [2] = ["ballon"; "balle"; "chatton"; "chat"; "chien"] 
+let%test _ = prefixe dico_for_test [2;4] = ["chatton"; "chat"; "chien"]
+let%test _ = prefixe dico_for_test [8; 3; 6] = ["tendre"; "vendre"]
