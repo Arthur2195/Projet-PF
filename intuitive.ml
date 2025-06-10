@@ -178,7 +178,22 @@ let%test _ =
   dico_for_test =
     Noeud
  ([],
-  [(4,
+  [(8,
+    Noeud
+     ([],
+      [(3,
+        Noeud
+         ([],
+          [(6,
+            Noeud
+             ([],
+              [(3,
+                Noeud
+                 ([],
+                  [(7,
+                    Noeud
+                     ([], [(3, Noeud (["tendre"; "vendre"], []))]))]))]))]))]));
+   (4,
     Noeud
      ([],
       [(7,
@@ -224,7 +239,7 @@ let%test _ =
                   [(3, Noeud (["balle"], []));
                    (6,
                     Noeud
-                     ([], [(6, Noeud (["ballon"], []))]))]))]))]))]))])
+                     ([], [(6, Noeud (["ballon"], []))]))]))]))]))]))])   
 
 
 
@@ -355,6 +370,10 @@ let%test _ = does_raise (fun () -> coherent t9_map t7) (*Dico qui n'est pas cens
 let rec decoder_mot (Noeud(lm, lc)) listTouches = match listTouches with 
 |[] -> lm
 |t::q -> List.fold_left (fun acc (n, d) -> if n = t then (decoder_mot d q)@acc else acc) [] lc
+
+(*TESTS*)
+let%test _ = decoder_mot dico_for_test [2;4;2;8] = ["chat"]
+let%test _ = decoder_mot dico_for_test [8; 3; 6; 3; 7; 3] = ["tendre";"vendre"]
 
 (*QUESTION 2*)
 let rec prefixe (Noeud(lm, lc)) listTouches = match listTouches with
