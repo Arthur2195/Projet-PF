@@ -367,6 +367,20 @@ let%test _ = does_raise (fun () -> coherent t9_map t7) (*Dico qui n'est pas cens
 (*                                                                            *)
 (******************************************************************************)
 (*QUESTION 1*)
+(******************************************************************************)
+(*                     Fonction decoder_mot                                  *)
+(*                                                                            *)
+(*   signature : decoder_mot : dico -> int list -> string list                *)
+(*   paramètres :                                                             *)
+(*      - un dictionnaire : arbre n-aire avec des listes de mots dans les     *)
+(*        nœuds et des chiffres (touches) sur les branches                    *)
+(*      - une liste de touches (int list) correspondant à une séquence        *)
+(*        codant un mot                                                      *)
+(*                                                                            *)
+(*   résultat :                                                               *)
+(*      - la liste des mots codés par la séquence de touches donnée           *)
+(*        (liste de chaînes de caractères)                                   *)
+(******************************************************************************)
 let rec decoder_mot (Noeud(lm, lc)) listTouches = match listTouches with 
 |[] -> lm
 |t::q -> List.fold_left (fun acc (n, d) -> if n = t then (decoder_mot d q)@acc else acc) [] lc
@@ -376,6 +390,30 @@ let%test _ = decoder_mot dico_for_test [2;4;2;8] = ["chat"]
 let%test _ = decoder_mot dico_for_test [8; 3; 6; 3; 7; 3] = ["tendre";"vendre"]
 
 (*QUESTION 2*)
+(******************************************************************************)
+(*                   Fonction max_mots_code_identique                        *)
+(*                                                                            *)
+(*   signature : max_mots_code_identique : dico -> int                        *)
+(*   paramètres :                                                             *)
+(*      - un dictionnaire : arbre n-aire avec des listes de mots dans les     *)
+(*        nœuds et des chiffres (touches) sur les branches                    *)
+(*                                                                            *)
+(*   résultat :                                                               *)
+(*      - le nombre maximal de mots partageant la même séquence de touches    *)
+(*        dans tout le dictionnaire                                         *)
+(******************************************************************************)
+let rec max_mots_code_identique dico =
+  match dico with
+  | Noeud (lm, []) -> List.length lm 
+  | Noeud (lm, lc) ->
+      let nb_mots = List.length lm in
+      let max_enfants = 
+        List.fold_left (fun acc (_, l) -> max acc (max_mots_code_identique l)) 0 lc
+      in
+      max nb_mots max_enfants
+
+let%test _ = max_mots_code_identique empty = 0
+let%test _ = max_mots_code_identique dico_for_test = 2
 let rec prefixe (Noeud(lm, lc)) listTouches = match listTouches with
 |[] -> if lc = [] then lm else List.fold_left (fun acc (_,d) -> (prefixe d [])@acc) lm lc 
 |t::q -> List.fold_left (fun acc (n, d) -> if n = t then (prefixe d q)@acc else acc) [] lc
@@ -384,3 +422,29 @@ let rec prefixe (Noeud(lm, lc)) listTouches = match listTouches with
 let%test _ = prefixe dico_for_test [2] = ["ballon"; "balle"; "chatton"; "chat"; "chien"] 
 let%test _ = prefixe dico_for_test [2;4] = ["chatton"; "chat"; "chien"]
 let%test _ = prefixe dico_for_test [8; 3; 6] = ["tendre"; "vendre"]
+
+(*Question 3*)
+(******************************************************************************)
+(*                   Fonction max_mots_code_identique                        *)
+(*                                                                            *)
+(*   signature : max_mots_code_identique : dico -> int                        *)
+(*   paramètres :                                                             *)
+(*      - un dictionnaire : arbre n-aire avec des listes de mots dans les     *)
+(*        nœuds et des chiffres (touches) sur les branches                    *)
+(*                                                                            *)
+(*   résultat :                                                               *)
+(*      - le nombre maximal de mots partageant la même séquence de touches    *)
+(*        dans tout le dictionnaire                                         *)
+(******************************************************************************)
+let rec max_mots_code_identique dico =
+  match dico with
+  | Noeud (lm, []) -> List.length lm 
+  | Noeud (lm, lc) ->
+      let nb_mots = List.length lm in
+      let max_enfants = 
+        List.fold_left (fun acc (_, l) -> max acc (max_mots_code_identique l)) 0 lc
+      in
+      max nb_mots max_enfants
+
+let%test _ = max_mots_code_identique empty = 0
+let%test _ = max_mots_code_identique dico_for_test = 2
