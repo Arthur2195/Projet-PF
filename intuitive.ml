@@ -448,3 +448,23 @@ let rec max_mots_code_identique dico =
 
 let%test _ = max_mots_code_identique empty = 0
 let%test _ = max_mots_code_identique dico_for_test = 2
+
+(* QUESTION 4 *)
+(******************************************************************************)
+(*                                                                            *)
+(*      Fonction lister les mots d'un dictionnaire                            *)
+(*                                                                            *)
+(*   signature : lister : dico -> string list                                 *)
+(*                                                                            *)
+(*   paramètres :                                                             *)
+(*      - un dictionnaire : arbre n-aire avec des listes de mots dans les     *)
+(*        nœuds et des chiffres (touches) sur les branches                    *)
+(*                                                                            *)
+(*   résultat :                                                               *)
+(*      - une liste de mots contenus dans le dictionnaire                     *)
+(******************************************************************************)
+let rec lister (Noeud(lm, lc)) =
+  lm @ List.fold_left (fun acc (_, d) -> acc @ lister d) [] lc
+
+let%test _ = lister dico_for_test = ["tendre"; "vendre"; "gris"; "gros"; "chien"; "chat"; "chatton"; "balle"; "ballon"]
+let%test _ = lister empty = []
